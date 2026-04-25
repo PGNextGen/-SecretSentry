@@ -1,14 +1,14 @@
 # 🔐 SecretSentry
 
 <p align="center">
-  <img src="img/SecretSentry.png" alt="SecretSentry Logo" width="400"/>
+  <img src="img/SecretSentry.png" alt="SecretSentry Logo" width="800"/>
 </p>
 
 A pipeline-based MCP server that detects hardcoded secrets, credentials, API keys, and risky values in your code — even when they're encoded, split, obfuscated, or hidden inside command substitutions. Powered by a 6-stage detection pipeline with confidence scoring that separates real threats from noise.
 
 ## Why
 
-One leaked secret in Git history can cost you. SecretSentry catches them before that happens — right inside your IDE via the Model Context Protocol. Unlike simple regex scanners, SecretSentry decodes base64, hex, and URL-encoded values, reconstructs split secrets, simulates command substitutions, and uses prefix intelligence from 35+ providers to catch what others miss.
+One leaked secret in Git history can cost you. SecretSentry catches them before that happens — right inside your editor via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). Unlike simple regex scanners, SecretSentry decodes base64, hex, and URL-encoded values, reconstructs split secrets, simulates command substitutions, and uses prefix intelligence from 35+ providers to catch what others miss.
 
 ## Tools
 
@@ -166,10 +166,23 @@ secret-sentry/
 uv run secret-sentry/server.py
 ```
 
-### Kiro Configuration
+### MCP Client Configuration
 
-Add to `.kiro/settings/mcp.json`:
+SecretSentry works with any MCP-compatible client (Claude Desktop, Cursor, Kiro, VS Code + Continue, etc.). Add the server to your client's MCP config:
 
+**Claude Desktop** (`claude_desktop_config.json`):
+```json
+{
+  "mcpServers": {
+    "secret-sentry": {
+      "command": "uv",
+      "args": ["run", "/path/to/secret-sentry/server.py"]
+    }
+  }
+}
+```
+
+**Cursor / Kiro / Other MCP Clients** (typically `mcp.json` or similar):
 ```json
 {
   "mcpServers": {
@@ -186,12 +199,22 @@ Add to `.kiro/settings/mcp.json`:
 }
 ```
 
+Refer to your MCP client's documentation for the exact config file location.
+
 ## Usage Examples
+
+Once connected to your MCP client, you can use natural language:
 
 - "Scan this file for secrets"
 - "Scan the ./src directory for hardcoded credentials"
 - "Check if this string looks like a secret: `AIzaSyD3x...`"
 - Paste any code snippet and ask "Are there any secrets in this?"
+
+Or call the tools directly via the MCP protocol:
+- `scan_code(code="...", filename="config.py")`
+- `scan_file(filepath="/path/to/file.env")`
+- `scan_directory(dirpath="./src", extensions=".py,.js")`
+- `check_entropy(value="sk_live_abc123...")`
 
 ## Sharing
 
@@ -202,10 +225,15 @@ python -m build
 twine upload dist/*
 ```
 
-Others use it with: `"command": "uvx", "args": ["secret-sentry"]`
+Others install with: `"command": "uvx", "args": ["secret-sentry"]`
 
-**Git repo (teams):**
-Push to your Git remote. Others clone and point their MCP config to the local path.
+**npm-style (via npx equivalent):**
+```bash
+uvx secret-sentry
+```
+
+**Git repo (teams/internal):**
+Push to your Git remote. Others clone and point their MCP config to the local `server.py` path.
 
 ## Roadmap
 
