@@ -1,8 +1,10 @@
 # 🔐 SecretSentry
 
-A pipeline-based MCP server that detects hardcoded secrets, credentials, API keys, and risky values in your code — even when they're encoded, split, obfuscated, or hidden inside command substitutions. Powered by a 6-stage detection pipeline with confidence scoring that separates real threats from noise.
+<p align="center">
+  <img src="img/SecretSentry.png" alt="SecretSentry Logo" width="400"/>
+</p>
 
-![App Screenshot](SecretSentry.png)
+A pipeline-based MCP server that detects hardcoded secrets, credentials, API keys, and risky values in your code — even when they're encoded, split, obfuscated, or hidden inside command substitutions. Powered by a 6-stage detection pipeline with confidence scoring that separates real threats from noise.
 
 ## Why
 
@@ -108,7 +110,11 @@ Severity derived from score:
 
 Findings below confidence 15 are suppressed. Results split into "Confirmed" and "Candidates" tables.
 
-## Output Format
+## Sample Output
+
+<p align="center">
+  <img src="img/secretSentry_result.png" alt="SecretSentry Scan Result" width="800"/>
+</p>
 
 Results are always in tabular format with columns: #, Severity, Score, File, Line, Source, Rule, Match, Fix.
 
@@ -118,6 +124,34 @@ The "Source" column tells you which pipeline stage caught the finding:
 - `decoded:base64`, `decoded:hex`, `decoded:url` — decoding stage
 - `decoded:cmd:base64_decode`, `decoded:cmd:echo`, `decoded:cmd:reverse` — command substitution
 - `reconstructed:string_concat`, `reconstructed:split_assignment`, `reconstructed:array_split` — reconstruction
+
+## Project Structure
+
+```
+secret-sentry/
+├── server.py                          # Entry point for uv run
+├── pyproject.toml                     # Package config
+├── README.md
+├── img/
+│   ├── SecretSentry.png               # Logo
+│   └── secretSentry_result.png        # Sample scan output
+└── src/
+    └── secret_sentry/
+        ├── __init__.py                # Package init
+        ├── models.py                  # ScanContext dataclass
+        ├── utils.py                   # Shared helpers (entropy, masking, etc.)
+        ├── pipeline.py                # Pipeline orchestrator (6 stages)
+        ├── formatter.py               # Tabular output formatting
+        ├── server.py                  # MCP tool definitions + main()
+        └── stages/
+            ├── __init__.py            # Stage exports
+            ├── normalize.py           # Stage 1: Unicode, hex escapes, confusables
+            ├── decode.py              # Stage 2: Base64, hex, URL, chained, cmd sub
+            ├── reconstruct.py         # Stage 3: Concat, split, array reconstruction
+            ├── prefix.py              # Stage 4: 35+ provider prefix database
+            ├── regex.py               # Stage 5: 50+ regex detection rules
+            └── score.py               # Stage 6: Confidence scoring + noise filter
+```
 
 ## Setup
 
@@ -196,12 +230,13 @@ Push to your Git remote. Others clone and point their MCP config to the local pa
 ### ✅ Completed
 - ~~Confidence scoring~~ — 0-100 with 8-factor scoring
 - ~~40+ provider patterns~~ — AWS, GCP, Azure, GitHub, Stripe, etc.
-- ~~Pipeline architecture~~ — 6-stage detection pipeline
+- ~~Pipeline architecture~~ — 6-stage modular pipeline
 - ~~Reconstruction + decoding~~ — base64, hex, URL, chained transforms
 - ~~Prefix intelligence~~ — 35+ provider prefix database
 - ~~Command substitution~~ — simulates echo, base64 decode, rev
 - ~~URL encoding detection~~ — percent-decode before scanning
 - ~~Noise filtering~~ — repeating chars, sequential patterns, entropy+length combined
+- ~~Package restructure~~ — proper `src/` layout with modular stages
 
 ### 🧪 Known Limitations
 - No semantic understanding (can't trace data flow across functions)
