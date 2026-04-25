@@ -4,173 +4,26 @@
   <img src="img/SecretSentry.png" alt="SecretSentry Logo" width="800"/>
 </p>
 
-A pipeline-based MCP server that detects hardcoded secrets, credentials, API keys, and risky values in your code — even when they're encoded, split, obfuscated, or hidden inside command substitutions. Powered by a 6-stage detection pipeline with confidence scoring that separates real threats from noise.
-
-## Why
-
-One leaked secret in Git history can cost you. SecretSentry catches them before that happens — right inside your editor via the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). Unlike simple regex scanners, SecretSentry decodes base64, hex, and URL-encoded values, reconstructs split secrets, simulates command substitutions, and uses prefix intelligence from 35+ providers to catch what others miss.
-
-## Tools
-
-| Tool | Description |
-|------|-------------|
-| `scan_code` | Scan a code snippet pasted in chat |
-| `scan_file` | Scan a file on disk by path |
-| `scan_directory` | Scan an entire project (skips binaries, node_modules, .git, build dirs) |
-| `check_entropy` | Analyze a string's Shannon entropy + prefix intelligence |
-
-## 6-Stage Detection Pipeline
-
-```
-Raw Code
-  → Stage 1: NORMALIZATION    (unicode decode, hex escapes, confusable chars)
-  → Stage 2: DECODING         (base64, hex, URL, chained transforms, command substitution)
-  → Stage 3: RECONSTRUCTION   (string concat, split assignments, array splits)
-  → Stage 4: PREFIX INTEL     (35+ provider prefix database)
-  → Stage 5: REGEX MATCHING   (50+ pattern rules)
-  → Stage 6: SCORING          (confidence 0-100, noise filtering)
-  → Output: Findings in tabular format, sorted by confidence
-```
-
-### Stage 1: Normalization
-- Unicode escape decoding (`\u0061` → `a`)
-- Hex escape decoding (`\x67\x68\x70` → `ghp`)
-- Unicode confusable normalization (Cyrillic `р` → Latin `p`)
-- Smart quote normalization
-
-### Stage 2: Decoding + Chained Transforms
-- Base64 decoding (standard + URL-safe)
-- Hex decoding (`4a776f7264...` → `Jword1234...`)
-- URL percent-encoding (`ghp%5Ftoken` → `ghp_token`)
-- Chained transforms up to 3 layers deep (base64 → JSON → base64)
-- Command substitution simulation:
-  - `$(echo BASE64 | base64 --decode)` → decoded value
-  - `` `echo BASE64 | base64 --decode` `` → decoded value
-  - `echo VALUE | rev` → reversed value
-  - `echo "secret_value"` → extracted value
-
-### Stage 3: Reconstruction
-- String concatenation (`"sk_live_" + suffix`)
-- Sequential split assignments (`part1=sk_live_51H`, `part2=xxABC`)
-- Array-style splits (`keys[0]=AIza`, `keys[1]=SyD`)
-
-### Stage 4: Prefix Intelligence
-35+ known provider prefixes with metadata:
-
-| Provider | Prefixes |
-|----------|----------|
-| AWS | `AKIA`, `ABIA`, `ACCA`, `ASIA` |
-| Google | `AIza` |
-| GitHub | `ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_` |
-| GitLab | `glpat-` |
-| Stripe | `sk_live_`, `rk_live_`, `sk_test_`, `pk_live_`, `whsec_` |
-| Slack | `xoxb-`, `xoxp-`, `xoxa-`, `xoxr-` |
-| SendGrid | `SG.` |
-| Square | `sq0atp-`, `sq0csp-` |
-| Twilio | `SK`, `AC` |
-| Shopify | `shpat_`, `shpca_`, `shppa_` |
-| PyPI | `pypi-` |
-| npm | `npm_` |
-| DigitalOcean | `dop_v1_` |
-| Cloudflare | `v2.` |
-| Mailgun | `key-` |
-| JWT | `eyJ` |
-| Amazon MWS | `amzn.mws.` |
-
-Prefix intelligence runs on raw values, decoded values, AND reconstructed values — catching secrets across all pipeline stages.
-
-### Stage 5: Regex Pattern Matching (50+ Rules)
-
-Covers: AWS, GCP, Azure, GitHub, GitLab, Stripe, PayPal, Square, Slack, Discord, Twilio, SendGrid, Mailgun, Datadog, New Relic, Sentry, MongoDB/Postgres/MySQL/Redis connection strings, JDBC, private keys (RSA/EC/DSA/OpenSSH/PGP), JWTs, hardcoded passwords/secrets/tokens/encryption keys, URLs with credentials, npm/PyPI/Docker tokens, Android-specific patterns, and high-entropy catch-all.
-
-### Stage 6: Confidence Scoring + Noise Filtering
-
-Every finding gets a 0-100 confidence score from 8 factors:
-
-| Factor | Effect |
-|--------|--------|
-| Base score | Rule-specific starting score (15-98) |
-| Entropy + Length combined | High entropy + long = strong signal (+20), low entropy + long = noise (-35 to -50) |
-| Keyword proximity | Line contains "password", "secret", "token", etc. (+10) |
-| Context penalties | Test file (-25), placeholder (-40), comment (-20), env var ref (-30), example/dummy (-20) |
-| Noise detection | Repeating chars (-50), all-lowercase low-entropy (-20), all-digits (-25), sequential patterns (-15) |
-| Nearby context | Multiple secret-related lines nearby (+5) |
-| Combined signal | High entropy + sensitive keyword + not test file (+5) |
-| Pipeline source bonus | Decoded/reconstructed secrets get +5 (hidden = more suspicious) |
-
-Severity derived from score:
-
-| Score | Severity | Emoji |
-|-------|----------|-------|
-| 90-100 | CRITICAL | 🚨 |
-| 70-89 | HIGH | 🔴 |
-| 50-69 | MEDIUM | 🟡 |
-| 30-49 | LOW | 🟢 |
-| 0-29 | INFO | ℹ️ |
-
-Findings below confidence 15 are suppressed. Results split into "Confirmed" and "Candidates" tables.
-
-## Sample Output
-
 <p align="center">
-  <img src="img/secretSentry_result.png" alt="SecretSentry Scan Result" width="800"/>
+  <b>Pipeline-based secret detection for any MCP-compatible editor.</b><br/>
+  Catches hardcoded secrets even when they're encoded, split, obfuscated, or hidden in command substitutions.
 </p>
 
-Results are always in tabular format with columns: #, Severity, Score, File, Line, Source, Rule, Match, Fix.
+<p align="center">
+  <code>50+ regex rules</code> · <code>35+ provider prefixes</code> · <code>6-stage pipeline</code> · <code>0-100 confidence scoring</code>
+</p>
 
-The "Source" column tells you which pipeline stage caught the finding:
-- `regex` — standard pattern match
-- `prefix:Provider` — prefix intelligence
-- `decoded:base64`, `decoded:hex`, `decoded:url` — decoding stage
-- `decoded:cmd:base64_decode`, `decoded:cmd:echo`, `decoded:cmd:reverse` — command substitution
-- `reconstructed:string_concat`, `reconstructed:split_assignment`, `reconstructed:array_split` — reconstruction
+---
 
-## Project Structure
-
-```
-secret-sentry/
-├── server.py                          # Entry point for uv run
-├── pyproject.toml                     # Package config
-├── README.md
-├── img/
-│   ├── SecretSentry.png               # Logo
-│   └── secretSentry_result.png        # Sample scan output
-└── src/
-    └── secret_sentry/
-        ├── __init__.py                # Package init
-        ├── models.py                  # ScanContext dataclass
-        ├── utils.py                   # Shared helpers (entropy, masking, etc.)
-        ├── pipeline.py                # Pipeline orchestrator (6 stages)
-        ├── formatter.py               # Tabular output formatting
-        ├── server.py                  # MCP tool definitions + main()
-        └── stages/
-            ├── __init__.py            # Stage exports
-            ├── normalize.py           # Stage 1: Unicode, hex escapes, confusables
-            ├── decode.py              # Stage 2: Base64, hex, URL, chained, cmd sub
-            ├── reconstruct.py         # Stage 3: Concat, split, array reconstruction
-            ├── prefix.py              # Stage 4: 35+ provider prefix database
-            ├── regex.py               # Stage 5: 50+ regex detection rules
-            └── score.py               # Stage 6: Confidence scoring + noise filter
-```
-
-## Setup
-
-### Prerequisites
-
-- Python 3.10+
-- [uv](https://docs.astral.sh/uv/getting-started/installation/) (Python package runner)
-
-### Install & Run
+## Quick Start
 
 ```bash
+# Prerequisites: Python 3.10+, uv
 uv run secret-sentry/server.py
 ```
 
-### MCP Client Configuration
+Add to your MCP client config:
 
-SecretSentry works with any MCP-compatible client (Claude Desktop, Cursor, Kiro, VS Code + Continue, etc.). Add the server to your client's MCP config:
-
-**Claude Desktop** (`claude_desktop_config.json`):
 ```json
 {
   "mcpServers": {
@@ -182,92 +35,160 @@ SecretSentry works with any MCP-compatible client (Claude Desktop, Cursor, Kiro,
 }
 ```
 
-**Cursor / Kiro / Other MCP Clients** (typically `mcp.json` or similar):
-```json
-{
-  "mcpServers": {
-    "secret-sentry": {
-      "command": "uv",
-      "args": ["run", "secret-sentry/server.py"],
-      "env": {
-        "FASTMCP_LOG_LEVEL": "ERROR"
-      },
-      "disabled": false,
-      "autoApprove": []
-    }
-  }
-}
+Works with [Claude Desktop](https://claude.ai/download), [Cursor](https://cursor.sh), [Kiro](https://kiro.dev), [VS Code + Continue](https://continue.dev), and any [MCP-compatible](https://modelcontextprotocol.io/) client.
+
+---
+
+## Sample Output
+
+<p align="center">
+  <img src="img/secretSentry_result.png" alt="SecretSentry Scan Result" width="800"/>
+</p>
+
+---
+
+## Tools
+
+| Tool | Description |
+|------|-------------|
+| `scan_code` | Scan a code snippet directly |
+| `scan_file` | Scan a file on disk by path |
+| `scan_directory` | Scan an entire project (auto-skips binaries, node_modules, .git, build dirs) |
+| `check_entropy` | Analyze a string's Shannon entropy + prefix intelligence |
+
+---
+
+## How It Works
+
+SecretSentry runs every scan through a 6-stage pipeline:
+
+```
+Raw Code
+  → 1. NORMALIZE     unicode escapes, hex escapes, confusable chars
+  → 2. DECODE        base64, hex, URL encoding, chained transforms (3 layers), command substitution
+  → 3. RECONSTRUCT   string concat, split assignments, array fragments
+  → 4. PREFIX MATCH  35+ known provider prefixes (AWS, GitHub, Stripe, Slack, etc.)
+  → 5. REGEX MATCH   50+ pattern rules across 15+ categories
+  → 6. SCORE         confidence 0-100 with noise filtering
+  → Output           tabular results sorted by confidence
 ```
 
-Refer to your MCP client's documentation for the exact config file location.
+Each stage feeds the next — so a base64-encoded, array-split Stripe key gets decoded, reconstructed, prefix-matched, AND regex-matched, with the confidence score reflecting all signals.
 
-## Usage Examples
+---
 
-Once connected to your MCP client, you can use natural language:
+## What It Detects
 
-- "Scan this file for secrets"
-- "Scan the ./src directory for hardcoded credentials"
-- "Check if this string looks like a secret: `AIzaSyD3x...`"
-- Paste any code snippet and ask "Are there any secrets in this?"
+| Category | Examples |
+|----------|---------|
+| Cloud Keys | AWS (`AKIA`), GCP (`AIza`), Azure Storage/Connection Strings |
+| VCS Tokens | GitHub (`ghp_`, `gho_`, `ghu_`), GitLab (`glpat-`) |
+| Payment | Stripe (`sk_live_`, `rk_live_`), PayPal, Square |
+| Communication | Slack (`xoxb-`), Discord webhooks, Twilio, SendGrid, Mailgun |
+| Monitoring | Datadog, New Relic, Sentry DSN |
+| Database | MongoDB/Postgres/MySQL/Redis/AMQP connection strings, JDBC |
+| Crypto | RSA/EC/DSA/OpenSSH/PGP private keys, encryption keys |
+| Auth | JWTs, hardcoded passwords/secrets/tokens |
+| Registry | npm, PyPI, Docker Hub tokens |
+| Android | Manifest API keys, BuildConfig secrets, Firebase inline config |
+| Infra | Hardcoded IPs, URLs with embedded credentials |
+| Obfuscated | Base64/hex/URL-encoded secrets, split strings, command substitutions |
 
-Or call the tools directly via the MCP protocol:
-- `scan_code(code="...", filename="config.py")`
-- `scan_file(filepath="/path/to/file.env")`
-- `scan_directory(dirpath="./src", extensions=".py,.js")`
-- `check_entropy(value="sk_live_abc123...")`
+---
 
-## Sharing
+## Confidence Scoring
 
-**PyPI (public):**
-```bash
-pip install build twine
-python -m build
-twine upload dist/*
+Every finding gets a 0-100 score based on 8 factors:
+
+| Factor | Effect |
+|--------|--------|
+| Pattern strength | Rule-specific base score (15-98) |
+| Entropy + length | High entropy + long → strong signal; low entropy + long → noise penalty |
+| Keyword proximity | Near "password", "secret", "token" → boost |
+| Context | Test file, placeholder, comment, env var reference → penalty |
+| Noise filter | Repeating chars, sequential patterns, all-digits → heavy penalty |
+| Nearby lines | Multiple secret-related lines nearby → boost |
+| Combined signal | High entropy + keyword + not test → extra boost |
+| Hidden bonus | Decoded/reconstructed secrets → +5 (obfuscation = more suspicious) |
+
+| Score | Severity |
+|-------|----------|
+| 90-100 | 🚨 CRITICAL |
+| 70-89 | 🔴 HIGH |
+| 50-69 | 🟡 MEDIUM |
+| 30-49 | 🟢 LOW |
+| 0-29 | ℹ️ INFO |
+
+Results are split into **Confirmed Findings** and **Possible Candidates**. Findings below 15 are suppressed.
+
+---
+
+## Project Structure
+
+```
+secret-sentry/
+├── server.py                    # Entry point (uv run)
+├── pyproject.toml
+├── README.md
+├── ROADMAP.md                   # Vulnerability scanning roadmap
+├── img/
+└── src/secret_sentry/
+    ├── __init__.py
+    ├── models.py                # ScanContext dataclass
+    ├── utils.py                 # Entropy, masking, helpers
+    ├── pipeline.py              # 6-stage orchestrator
+    ├── formatter.py             # Tabular output
+    ├── server.py                # MCP tool definitions
+    └── stages/
+        ├── normalize.py         # Stage 1
+        ├── decode.py            # Stage 2
+        ├── reconstruct.py       # Stage 3
+        ├── prefix.py            # Stage 4
+        ├── regex.py             # Stage 5
+        └── score.py             # Stage 6
 ```
 
-Others install with: `"command": "uvx", "args": ["secret-sentry"]`
+---
 
-**npm-style (via npx equivalent):**
+## Sharing / Distribution
+
 ```bash
+# PyPI
+pip install build twine && python -m build && twine upload dist/*
+
+# Others use it with:
 uvx secret-sentry
 ```
 
-**Git repo (teams/internal):**
-Push to your Git remote. Others clone and point their MCP config to the local `server.py` path.
+Or share the Git repo — others clone and point their MCP config to `server.py`.
+
+---
 
 ## Roadmap
 
-### 🔴 High Priority
-- Git pre-commit hook integration
-- Incremental diff-only scanning
-- Allowlist / `.secretsentryignore` support
-- SARIF / JSON output for CI/CD
+See [ROADMAP.md](ROADMAP.md) for the full vulnerability scanning expansion plan.
 
-### 🟡 Medium Priority
-- Multi-line secret detection (full private key blocks)
-- Language-aware AST parsing (tree-sitter)
-- Custom rules via `.secretsentry.yaml`
-- Scan history and tracking
+| Status | Feature |
+|--------|---------|
+| ✅ | 6-stage pipeline with confidence scoring |
+| ✅ | 50+ regex rules, 35+ provider prefixes |
+| ✅ | Base64/hex/URL decoding with 3-layer chaining |
+| ✅ | String reconstruction (concat, split, array) |
+| ✅ | Command substitution simulation |
+| ✅ | Noise filtering (repeating chars, sequential patterns) |
+| ✅ | Modular `src/` package structure |
+| 🔜 | Dependency CVE scanning (Phase 1) |
+| 🔜 | Code vulnerability patterns — SQLi, XSS, etc. (Phase 2) |
+| 🔜 | Config file scanning — Dockerfile, K8s, Terraform (Phase 3) |
+| 📋 | AST-based SAST with tree-sitter (Phase 4) |
+| 📋 | Supply chain & license checks (Phase 5) |
+| 📋 | Git pre-commit hook, baseline/allowlist, SARIF output |
 
-### 🟢 Nice to Have
-- Auto-fix code generation
-- Git history scanning
-- Secret rotation guidance per provider
-- HTML/Markdown report generation
+---
 
-### ✅ Completed
-- ~~Confidence scoring~~ — 0-100 with 8-factor scoring
-- ~~40+ provider patterns~~ — AWS, GCP, Azure, GitHub, Stripe, etc.
-- ~~Pipeline architecture~~ — 6-stage modular pipeline
-- ~~Reconstruction + decoding~~ — base64, hex, URL, chained transforms
-- ~~Prefix intelligence~~ — 35+ provider prefix database
-- ~~Command substitution~~ — simulates echo, base64 decode, rev
-- ~~URL encoding detection~~ — percent-decode before scanning
-- ~~Noise filtering~~ — repeating chars, sequential patterns, entropy+length combined
-- ~~Package restructure~~ — proper `src/` layout with modular stages
+## Known Limitations
 
-### 🧪 Known Limitations
-- No semantic understanding (can't trace data flow across functions)
+- No semantic/data-flow analysis (can't trace variables across functions)
 - XOR/encryption obfuscation bypasses detection
 - Single-file context (no cross-file tracking)
 - Command simulation is pattern-based, not execution-based
