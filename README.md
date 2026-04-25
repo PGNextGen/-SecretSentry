@@ -2,6 +2,8 @@
 
 A pipeline-based MCP server that detects hardcoded secrets, credentials, API keys, and risky values in your code — even when they're encoded, split, obfuscated, or hidden inside command substitutions. Powered by a 6-stage detection pipeline with confidence scoring that separates real threats from noise.
 
+![App Screenshot](SecretSentry.png)
+
 ## Why
 
 One leaked secret in Git history can cost you. SecretSentry catches them before that happens — right inside your IDE via the Model Context Protocol. Unlike simple regex scanners, SecretSentry decodes base64, hex, and URL-encoded values, reconstructs split secrets, simulates command substitutions, and uses prefix intelligence from 35+ providers to catch what others miss.
